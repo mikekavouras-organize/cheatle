@@ -1,7 +1,6 @@
 const list = require('./words')
 
 module.exports = (correct, absent, present) => {
-  console.log(absent)
   const correctByIdx = correct.reduce((prev, curr, idx) => {
     if (curr === null) return prev
     prev[curr] = idx
