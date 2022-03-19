@@ -65,6 +65,24 @@ const getElement = {
       default:
         return row.shadowRoot.querySelectorAll("game-tile")
     }
+  },
+  letter: tile => {
+    switch (window.location.href) {
+      case WORDLES[1]:
+        // @WORK
+        return null
+      default:
+        return tile.getAttribute("letter")
+    }
+  },
+  evaluation: tile => {
+    switch (window.location.href) {
+      case WORDLES[1]:
+        // @WORK
+        return null
+      default:
+        return tile.getAttribute("evaluation")
+    }
   }
 }
 
@@ -118,19 +136,16 @@ const parseRow = () => {
     present: Object()
   }
   for (const [tileIdx, tile] of tiles.entries()) {
-    const letter = tile.getAttribute("letter")
-    const evaluation = tile.getAttribute("evaluation")
+    const letter = getElement.letter(tile)
+    const evaluation = getElement.evaluation(tile)
 
     switch (evaluation) {
       case "correct":
         currentEmoji += "🟩"
 
-        rowData.correct[tileIdx] = letter
-        // if (letter in gameData.present) {
-        //   delete gameData.present[letter]
-        //   delete gameData.absent[letter]
-        // }
+        gameData.correct[tileIdx] = letter
         break
+
       case "present":
         currentEmoji += "🟨"
 
@@ -145,15 +160,15 @@ const parseRow = () => {
           }
         }
         break
+
       case "absent":
         currentEmoji += "⬜️"
         if (
-          rowData.absent.includes(letter) ||
-          letter in rowData.present
+          !rowData.absent.includes(letter) &&
+          !(letter in rowData.present)
         ) {
-          break
+          rowData.absent.push(letter)
         }
-        rowData.absent.push(letter)
         break
     }
 
@@ -174,12 +189,21 @@ const parseRow = () => {
     }
   }
 
-  console.log("******************")
-  console.log("rowData")
-  console.log(rowData)
+  for (const presentLetter in rowData.present) {
+    if (![...gameData.correct].includes(presentLetter)) {
+      gameData.present[presentLetter] = rowData.present[presentLetter]
+    }
+  }
+  for (const absentLetter of rowData.absent) {
+    if (
+      ![...gameData.correct].includes(absentLetter) &&
+      ![...gameData.absent].includes(absentLetter)
+    ) {
+      gameData.absent.push(absentLetter)
+    }
+  }
   gameData.guesses.push(currentGuess)
   gameData.emojis.push(currentEmoji)
-  gameData.currentRow++
 
   console.log("******************")
   console.log("gameData")
