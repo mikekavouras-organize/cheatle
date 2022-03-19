@@ -1,0 +1,8 @@
+#!/bin/bash
+
+DIR=${PWD##*/}
+if [ $DIR = "cheatle" ]; then
+  cp script.js plugin/script.js
+else
+  echo "script/build-plugin must be called from the project root"
+fi
