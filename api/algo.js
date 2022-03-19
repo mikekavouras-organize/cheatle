@@ -1,6 +1,8 @@
-const list = require('./words')
+const allWords = require('./words')
+const bradWords = require('./brad-words')
+const maWords = require('./ma-words')
 
-module.exports = (correct, absent, present) => {
+module.exports = (correct, absent, present, words) => {
   const correctByIdx = correct.reduce((prev, curr, idx) => {
     if (curr === null) return prev
     prev[curr] = idx
@@ -17,6 +19,8 @@ module.exports = (correct, absent, present) => {
   }, {})
   
   // filter returns a new array with results that PASS the test
+
+  const list = words || allWords
   const result = list.filter(word => {
     let matchesCorrect = true // default to true if there aren't any greenies
     matchesCorrect = Object.keys(correctByIdx).every(key => {
@@ -41,3 +45,4 @@ module.exports = (correct, absent, present) => {
 
   return result
 }
+
