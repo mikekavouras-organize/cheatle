@@ -25,6 +25,7 @@ const CONFIG_COLS =
 let gameData = {
   currentRow: 0,
   guesses: Array(),
+  emojis: Array(),
   correct: Array(CONFIG_COLS),
   absent: Array(),
   present: Object()
@@ -45,40 +46,49 @@ const typeLetter = (l, i) => {
  */
 const parseRow = () => {
   let currentGuess = ""
+  let currentEmoji = ""
   const row = rows[gameData.currentRow]
   const tiles = row.shadowRoot.querySelectorAll("game-tile")
 
+  let rowData = {
+    correct: Array(CONFIG_COLS),
+    absent: Array(),
+    present: Object()
+  }
   for (const [tileIdx, tile] of tiles.entries()) {
     const letter = tile.getAttribute("letter")
     const evaluation = tile.getAttribute("evaluation")
 
     switch (evaluation) {
       case "correct":
+        currentEmoji += "🟩"
+
         gameData.correct[tileIdx] = letter
-        if (letter in gameData.present) {
-          delete gameData.present[letter]
-        }
         break
+
       case "present":
-        if (gameData.present[letter] === undefined) {
-          gameData.present[letter] = {
+        currentEmoji += "🟨"
+
+        if (rowData.present[letter] === undefined) {
+          rowData.present[letter] = {
             letter,
             notIn: [tileIdx]
           }
         } else {
-          if (!gameData.present[letter].notIn.includes(tileIdx)) {
-            gameData.present[letter].notIn.push(tileIdx)
+          if (!rowData.present[letter].notIn.includes(tileIdx)) {
+            rowData.present[letter].notIn.push(tileIdx)
           }
         }
         break
+
       case "absent":
+        currentEmoji += "⬜️"
         if (
-          gameData.absent.includes(letter) ||
-          letter in gameData.present
+          !rowData.absent.includes(letter) &&
+          !(letter in rowData.present)
         ) {
-          break
+          rowData.absent.push(letter)
         }
-        gameData.absent.push(letter)
         break
     }
 
@@ -87,23 +97,37 @@ const parseRow = () => {
 
   /// Add notIn positions to present letters
   /// based on correct positions
-  for (const [
-    correctIdx,
-    correctLetter
-  ] of gameData.correct.entries()) {
+  for (const [correctIdx, correctLetter] of rowData.correct.entries()) {
     if (correctLetter === undefined) {
       continue
     }
 
-    for (const presentLetter of Object.keys(gameData.present)) {
-      if (!gameData.present[presentLetter].notIn.includes(correctIdx)) {
-        gameData.present[presentLetter].notIn.push(correctIdx)
+    for (const presentLetter of Object.keys(rowData.present)) {
+      if (!rowData.present[presentLetter].notIn.includes(correctIdx)) {
+        rowData.present[presentLetter].notIn.push(correctIdx)
       }
     }
   }
 
+  for (const presentLetter in rowData.present) {
+    if (![...gameData.correct].includes(presentLetter)) {
+      gameData.present[presentLetter] = rowData.present[presentLetter]
+    }
+  }
+  for (const absentLetter of rowData.absent) {
+    if (
+      ![...gameData.correct].includes(absentLetter) &&
+      ![...gameData.absent].includes(absentLetter)
+    ) {
+      gameData.absent.push(absentLetter)
+    }
+  }
   gameData.guesses.push(currentGuess)
-  gameData.currentRow++
+  gameData.emojis.push(currentEmoji)
+
+  console.log("******************")
+  console.log("gameData")
+  console.log(gameData)
 
   fetch(
     "https://corsanywhere.herokuapp.com/https://wrdl.glitch.me/guess",
@@ -119,7 +143,6 @@ const parseRow = () => {
     .then(data => {
       console.log("Cheatle guess: ", data[0].word)
       const c = gameData.correct.filter(d => d !== null)
-      console.log(c)
       if (gameData.correct.filter(d => d !== null).length === 5) {
         console.log("DONE!")
         return
@@ -143,6 +166,8 @@ const parseRow = () => {
     .catch(error => {
       console.error("Error:", error)
     })
+
+  gameData.currentRow++
 }
 
 /**
