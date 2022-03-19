@@ -6,148 +6,22 @@
  */
 
 import Axios from "axios"
+import GameConfig from "./utils/game-config"
 
-const API_URL =
-  "https://corsanywhere.herokuapp.com/https://wrdl.glitch.me/guess"
-
-const WORDLES = [
-  "https://www.nytimes.com/games/wordle/index.html",
-  "https://www.wordleunlimited.com/"
-]
-
-const GUESS_STATE = {
-  correct: "correct",
-  present: "present",
-  absent: "absent"
-}
-
-const getElement = {
-  game: () => {
-    switch (window.location.href) {
-      case WORDLES[1]:
-        return document.querySelector(".Game")
-      default:
-        return document
-          .querySelector("game-app")
-          .shadowRoot.querySelector("game-theme-manager")
-          .querySelector("#game")
-    }
-  },
-  keyboard: game => {
-    switch (window.location.href) {
-      case WORDLES[1]:
-        return game.querySelector(".Game-keyboard")
-      default:
-        return game
-          .querySelector("game-keyboard")
-          .shadowRoot.querySelector("#keyboard")
-    }
-  },
-  submit: keyboard => {
-    switch (window.location.href) {
-      case WORDLES[1]:
-        return keyboard.querySelector(
-          ".Game-keyboard-button.Game-keyboard-button-wide"
-        )
-      default:
-        return keyboard.querySelector('button[data-key="↵"]')
-    }
-  },
-  rows: game => {
-    switch (window.location.href) {
-      case WORDLES[1]:
-        return game.querySelectorAll(".RowL")
-      default:
-        return game.querySelectorAll("game-row")
-    }
-  },
-  columns: rows => {
-    switch (window.location.href) {
-      case WORDLES[1]:
-        return rows[0].querySelectorAll(".RowL-letter")
-      default:
-        return rows[0].shadowRoot.querySelectorAll("game-tile")
-    }
-  },
-  tiles: row => {
-    switch (window.location.href) {
-      case WORDLES[1]:
-        return row.querySelectorAll(".RowL-letter")
-      default:
-        return row.shadowRoot.querySelectorAll("game-tile")
-    }
-  },
-  letter: tile => {
-    switch (window.location.href) {
-      case WORDLES[1]:
-        return tile.innerHTML
-      default:
-        return tile.getAttribute("letter")
-    }
-  },
-  evaluation: tile => {
-    switch (window.location.href) {
-      case WORDLES[1]:
-        let evaluation
-        if (tile.classList.contains("letter-correct")) {
-          evaluation = GUESS_STATE.correct
-        } else if (tile.classList.contains("letter-elsewhere")) {
-          evaluation = GUESS_STATE.present
-        } else {
-          evaluation = GUESS_STATE.absent
-        }
-        return evaluation
-      default:
-        return tile.getAttribute("evaluation")
-    }
-  },
-  revelation: tiles => {
-    switch (window.location.href) {
-      case WORDLES[1]:
-        return (
-          tiles[0].parentNode.classList.contains("RowL-locked-in") &&
-          [...tiles].every(
-            tile =>
-              tile.classList.contains("letter-correct") ||
-              tile.classList.contains("letter-elsewhere") ||
-              tile.classList.contains("letter-absent")
-          )
-        )
-      default:
-        return (
-          [...tiles].filter(tile => tile.hasAttribute("reveal"))
-            .length === config.columnCount
-        )
-    }
-  },
-  emptyTiles: tiles => {
-    switch (window.location.href) {
-      case WORDLES[1]:
-        return (
-          !tiles[0].parentNode.classList.contains("RowL-locked-in") |
-          ![...tiles].every(
-            tile =>
-              tile.classList.contains("letter-correct") ||
-              tile.classList.contains("letter-elsewhere") ||
-              tile.classList.contains("letter-absent")
-          )
-        )
-      default:
-        return (
-          [...tiles].filter(tile => !tile.hasAttribute("evaluation"))
-            .length > 0
-        )
-    }
-  },
-  keyboardTarget: game => {
-    switch (window.location.href) {
-      case WORDLES[1]:
-        return game
-      default:
-        return window
-    }
+const config = new GameConfig({
+  location: window.location.href,
+  wordles: [
+    "https://www.nytimes.com/games/wordle/index.html",
+    "https://www.wordleunlimited.com/"
+  ],
+  api: "https://corsanywhere.herokuapp.com/https://wrdl.glitch.me/guess",
+  states: {
+    correct: "correct",
+    present: "present",
+    absent: "absent"
   }
-}
+})
+const elements = config.setupElements()
 
 const game = getElement.game()
 if (!game) {
@@ -161,7 +35,7 @@ const rows = getElement.rows(game)
 const cols = getElement.columns(rows)
 
 /// Data
-const config = {
+const config2 = {
   rowCount: rows.length,
   columnCount: cols.length
 }
@@ -169,7 +43,7 @@ const gameData = {
   currentRow: 0,
   guesses: Array(),
   emojis: Array(),
-  correct: Array(config.columnCount),
+  correct: Array(config2.columnCount),
   absent: Array(),
   present: Object()
 }
@@ -194,7 +68,7 @@ const parseRow = (callAPI = true) => {
   const tiles = getElement.tiles(rows[gameData.currentRow])
 
   let rowData = {
-    correct: Array(config.columnCount),
+    correct: Array(config2.columnCount),
     absent: Array(),
     present: Object()
   }
@@ -203,7 +77,7 @@ const parseRow = (callAPI = true) => {
     const evaluation = getElement.evaluation(tile)
 
     switch (evaluation) {
-      case GUESS_STATE.correct:
+      case config.states.correct:
         currentEmoji += "🟩"
 
         gameData.correct[tileIdx] = letter
@@ -212,7 +86,7 @@ const parseRow = (callAPI = true) => {
         }
         break
 
-      case GUESS_STATE.present:
+      case config.states.present:
         currentEmoji += "🟨"
 
         if (rowData.present[letter] === undefined) {
@@ -227,7 +101,7 @@ const parseRow = (callAPI = true) => {
         }
         break
 
-      case GUESS_STATE.absent:
+      case config.states.absent:
         currentEmoji += "⬜️"
 
         if (
@@ -280,7 +154,7 @@ const parseRow = (callAPI = true) => {
   gameData.emojis.push(currentEmoji)
 
   if (callAPI) {
-    Axios.post(API_URL, gameData)
+    Axios.post(config.api, gameData)
       .then(response => {
         const word = response.data[0].word
         console.log("Cheatle guess: ", word)
