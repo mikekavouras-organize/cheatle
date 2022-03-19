@@ -133,6 +133,14 @@ const getElement = {
             .length > 0
         )
     }
+  },
+  keyboardTarget: game => {
+    switch (window.location.href) {
+      case WORDLES[1]:
+        return game
+      default:
+        return window
+    }
   }
 }
 
@@ -158,15 +166,15 @@ const gameData = {
   emojis: Array(),
   correct: Array(config.columnCount),
   absent: Array(),
-  present: Object(),
-  victory: false
+  present: Object()
 }
 
 const typeLetter = (l, i) => {
   setTimeout(() => {
-    window.dispatchEvent(
-      new KeyboardEvent("keydown", {
-        key: l
+    getElement.keyboardTarget(game).dispatchEvent(
+      new window.KeyboardEvent("keydown", {
+        key: l,
+        bubbles: true
       })
     )
   }, i * 80)
@@ -176,10 +184,6 @@ const typeLetter = (l, i) => {
  * Parse Row
  */
 const parseRow = (callAPI = true) => {
-  if (gameData.victory) {
-    return
-  }
-
   let currentGuess = ""
   let currentEmoji = ""
   const tiles = getElement.tiles(rows[gameData.currentRow])
@@ -190,7 +194,6 @@ const parseRow = (callAPI = true) => {
     present: Object()
   }
 
-  let correct = 0
   for (const [tileIdx, tile] of tiles.entries()) {
     const letter = getElement.letter(tile)
     const evaluation = getElement.evaluation(tile)
@@ -203,7 +206,6 @@ const parseRow = (callAPI = true) => {
         if (letter in gameData.present) {
           delete gameData.present[letter]
         }
-        correct++
         break
 
       case GUESS_STATE.present:
@@ -273,10 +275,6 @@ const parseRow = (callAPI = true) => {
   gameData.guesses.push(currentGuess)
   gameData.emojis.push(currentEmoji)
 
-  console.log("******************")
-  console.log("gameData")
-  console.log(gameData)
-
   if (callAPI) {
     fetch(
       "https://corsanywhere.herokuapp.com/https://wrdl.glitch.me/guess",
@@ -293,7 +291,7 @@ const parseRow = (callAPI = true) => {
         console.log("Cheatle guess: ", data[0].word)
         const c = gameData.correct.filter(d => d !== null)
         if (gameData.correct.filter(d => d !== null).length === 5) {
-          console.log("DONE!")
+          console.log("VICTORY!")
           return
         }
 
@@ -302,9 +300,10 @@ const parseRow = (callAPI = true) => {
           typeLetter(l, i)
         })
         setTimeout(() => {
-          window.dispatchEvent(
+          getElement.keyboardTarget(game).dispatchEvent(
             new KeyboardEvent("keydown", {
-              key: "Enter"
+              key: "Enter",
+              bubbles: true
             })
           )
           setTimeout(() => {
@@ -316,11 +315,7 @@ const parseRow = (callAPI = true) => {
         console.error("Error:", error)
       })
   }
-  if (correct === config.columnCount) {
-    gameData.victory = true
-  } else {
-    gameData.currentRow++
-  }
+  gameData.currentRow++
 }
 
 /**
@@ -334,9 +329,6 @@ const waitForAnimations = () => {
   return new Promise((resolve, reject) => {
     const interval = setInterval(() => {
       const allTilesRevealed = getElement.revelation(tiles)
-      console.log("******************")
-      console.log("allTilesRevealed")
-      console.log(allTilesRevealed)
       if (allTilesRevealed) {
         clearInterval(interval)
         resolve()
