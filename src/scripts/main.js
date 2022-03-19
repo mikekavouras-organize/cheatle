@@ -5,6 +5,11 @@
  * localStorage.removeItem("nyt-wordle-state");location.reload()
  */
 
+import Axios from "axios"
+
+const API_URL =
+  "https://corsanywhere.herokuapp.com/https://wrdl.glitch.me/guess"
+
 const WORDLES = [
   "https://www.nytimes.com/games/wordle/index.html",
   "https://www.wordleunlimited.com/"
@@ -275,26 +280,16 @@ const parseRow = (callAPI = true) => {
   gameData.emojis.push(currentEmoji)
 
   if (callAPI) {
-    fetch(
-      "https://corsanywhere.herokuapp.com/https://wrdl.glitch.me/guess",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(gameData)
-      }
-    )
-      .then(response => response.json())
-      .then(data => {
-        console.log("Cheatle guess: ", data[0].word)
+    Axios.post(API_URL, gameData)
+      .then(response => {
+        const word = response.data[0].word
+        console.log("Cheatle guess: ", word)
         const c = gameData.correct.filter(d => d !== null)
         if (gameData.correct.filter(d => d !== null).length === 5) {
           console.log("VICTORY!")
           return
         }
 
-        const word = data[0].word
         word.split("").forEach((l, i) => {
           typeLetter(l, i)
         })
