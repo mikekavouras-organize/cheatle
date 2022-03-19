@@ -25,6 +25,7 @@ const CONFIG_COLS =
 let gameData = {
   currentRow: 0,
   guesses: Array(),
+  emojis: Array(),
   correct: Array(CONFIG_COLS),
   absent: Array(),
   present: Object()
@@ -45,6 +46,7 @@ const typeLetter = (l, i) => {
  */
 const parseRow = () => {
   let currentGuess = ""
+  let currentEmoji = ""
   const row = rows[gameData.currentRow]
   const tiles = row.shadowRoot.querySelectorAll("game-tile")
 
@@ -54,12 +56,17 @@ const parseRow = () => {
 
     switch (evaluation) {
       case "correct":
+        currentEmoji += "🟩"
+
         gameData.correct[tileIdx] = letter
         if (letter in gameData.present) {
           delete gameData.present[letter]
+          delete gameData.absent[letter]
         }
         break
       case "present":
+        currentEmoji += "🟨"
+
         if (gameData.present[letter] === undefined) {
           gameData.present[letter] = {
             letter,
@@ -72,6 +79,7 @@ const parseRow = () => {
         }
         break
       case "absent":
+        currentEmoji += "⬜️"
         if (
           gameData.absent.includes(letter) ||
           letter in gameData.present
@@ -103,7 +111,12 @@ const parseRow = () => {
   }
 
   gameData.guesses.push(currentGuess)
+  gameData.emojis.push(currentEmoji)
   gameData.currentRow++
+
+  console.log("******************")
+  console.log("gameData")
+  console.log(gameData)
 
   fetch(
     "https://corsanywhere.herokuapp.com/https://wrdl.glitch.me/guess",
