@@ -10,6 +10,12 @@ const WORDLES = [
   "https://www.wordleunlimited.com/"
 ]
 
+const GUESS_STATE = {
+  correct: "correct",
+  present: "present",
+  absent: "absent"
+}
+
 const getElement = {
   game: () => {
     switch (window.location.href) {
@@ -69,8 +75,7 @@ const getElement = {
   letter: tile => {
     switch (window.location.href) {
       case WORDLES[1]:
-        // @WORK
-        return null
+        return tile.innerHTML
       default:
         return tile.getAttribute("letter")
     }
@@ -78,10 +83,55 @@ const getElement = {
   evaluation: tile => {
     switch (window.location.href) {
       case WORDLES[1]:
-        // @WORK
-        return null
+        let evaluation
+        if (tile.classList.contains("letter-correct")) {
+          evaluation = GUESS_STATE.correct
+        } else if (tile.classList.contains("letter-elsewhere")) {
+          evaluation = GUESS_STATE.present
+        } else {
+          evaluation = GUESS_STATE.absent
+        }
+        return evaluation
       default:
         return tile.getAttribute("evaluation")
+    }
+  },
+  revelation: tiles => {
+    switch (window.location.href) {
+      case WORDLES[1]:
+        return (
+          tiles[0].parentNode.classList.contains("RowL-locked-in") &&
+          [...tiles].every(
+            tile =>
+              tile.classList.contains("letter-correct") ||
+              tile.classList.contains("letter-elsewhere") ||
+              tile.classList.contains("letter-absent")
+          )
+        )
+      default:
+        return (
+          [...tiles].filter(tile => tile.hasAttribute("reveal"))
+            .length === config.columnCount
+        )
+    }
+  },
+  emptyTiles: tiles => {
+    switch (window.location.href) {
+      case WORDLES[1]:
+        return (
+          !tiles[0].parentNode.classList.contains("RowL-locked-in") |
+          ![...tiles].every(
+            tile =>
+              tile.classList.contains("letter-correct") ||
+              tile.classList.contains("letter-elsewhere") ||
+              tile.classList.contains("letter-absent")
+          )
+        )
+      default:
+        return (
+          [...tiles].filter(tile => !tile.hasAttribute("evaluation"))
+            .length > 0
+        )
     }
   }
 }
@@ -102,14 +152,14 @@ const config = {
   rowCount: rows.length,
   columnCount: cols.length
 }
-
 const gameData = {
   currentRow: 0,
   guesses: Array(),
   emojis: Array(),
   correct: Array(config.columnCount),
   absent: Array(),
-  present: Object()
+  present: Object(),
+  victory: false
 }
 
 const typeLetter = (l, i) => {
@@ -125,7 +175,11 @@ const typeLetter = (l, i) => {
 /**
  * Parse Row
  */
-const parseRow = () => {
+const parseRow = (callAPI = true) => {
+  if (gameData.victory) {
+    return
+  }
+
   let currentGuess = ""
   let currentEmoji = ""
   const tiles = getElement.tiles(rows[gameData.currentRow])
@@ -135,18 +189,24 @@ const parseRow = () => {
     absent: Array(),
     present: Object()
   }
+
+  let correct = 0
   for (const [tileIdx, tile] of tiles.entries()) {
     const letter = getElement.letter(tile)
     const evaluation = getElement.evaluation(tile)
 
     switch (evaluation) {
-      case "correct":
+      case GUESS_STATE.correct:
         currentEmoji += "🟩"
 
         gameData.correct[tileIdx] = letter
+        if (letter in gameData.present) {
+          delete gameData.present[letter]
+        }
+        correct++
         break
 
-      case "present":
+      case GUESS_STATE.present:
         currentEmoji += "🟨"
 
         if (rowData.present[letter] === undefined) {
@@ -161,8 +221,9 @@ const parseRow = () => {
         }
         break
 
-      case "absent":
+      case GUESS_STATE.absent:
         currentEmoji += "⬜️"
+
         if (
           !rowData.absent.includes(letter) &&
           !(letter in rowData.present)
@@ -191,7 +252,14 @@ const parseRow = () => {
 
   for (const presentLetter in rowData.present) {
     if (![...gameData.correct].includes(presentLetter)) {
-      gameData.present[presentLetter] = rowData.present[presentLetter]
+      if (presentLetter in gameData.present) {
+        gameData.present[presentLetter].notIn = [
+          ...gameData.present[presentLetter].notIn,
+          ...rowData.present[presentLetter].notIn
+        ]
+      } else {
+        gameData.present[presentLetter] = rowData.present[presentLetter]
+      }
     }
   }
   for (const absentLetter of rowData.absent) {
@@ -209,44 +277,50 @@ const parseRow = () => {
   console.log("gameData")
   console.log(gameData)
 
-  fetch(
-    "https://corsanywhere.herokuapp.com/https://wrdl.glitch.me/guess",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(gameData)
-    }
-  )
-    .then(response => response.json())
-    .then(data => {
-      console.log("Cheatle guess: ", data[0].word)
-      const c = gameData.correct.filter(d => d !== null)
-      console.log(c)
-      if (gameData.correct.filter(d => d !== null).length === 5) {
-        console.log("DONE!")
-        return
+  if (callAPI) {
+    fetch(
+      "https://corsanywhere.herokuapp.com/https://wrdl.glitch.me/guess",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(gameData)
       }
+    )
+      .then(response => response.json())
+      .then(data => {
+        console.log("Cheatle guess: ", data[0].word)
+        const c = gameData.correct.filter(d => d !== null)
+        if (gameData.correct.filter(d => d !== null).length === 5) {
+          console.log("DONE!")
+          return
+        }
 
-      const word = data[0].word
-      word.split("").forEach((l, i) => {
-        typeLetter(l, i)
-      })
-      setTimeout(() => {
-        window.dispatchEvent(
-          new KeyboardEvent("keydown", {
-            key: "Enter"
-          })
-        )
+        const word = data[0].word
+        word.split("").forEach((l, i) => {
+          typeLetter(l, i)
+        })
         setTimeout(() => {
-          waitForAnimations().then(() => parseRow())
-        }, 500)
-      }, 1000)
-    })
-    .catch(error => {
-      console.error("Error:", error)
-    })
+          window.dispatchEvent(
+            new KeyboardEvent("keydown", {
+              key: "Enter"
+            })
+          )
+          setTimeout(() => {
+            waitForAnimations().then(() => parseRow())
+          }, 500)
+        }, 1000)
+      })
+      .catch(error => {
+        console.error("Error:", error)
+      })
+  }
+  if (correct === config.columnCount) {
+    gameData.victory = true
+  } else {
+    gameData.currentRow++
+  }
 }
 
 /**
@@ -259,10 +333,10 @@ const waitForAnimations = () => {
   const tiles = getElement.tiles(rows[gameData.currentRow])
   return new Promise((resolve, reject) => {
     const interval = setInterval(() => {
-      const allTilesRevealed =
-        [...tiles].filter(tile => tile.hasAttribute("reveal"))
-          .length === config.columnCount
-
+      const allTilesRevealed = getElement.revelation(tiles)
+      console.log("******************")
+      console.log("allTilesRevealed")
+      console.log(allTilesRevealed)
       if (allTilesRevealed) {
         clearInterval(interval)
         resolve()
@@ -278,14 +352,12 @@ const getCurrentRound = () => {
   for (const row of rows) {
     const tiles = getElement.tiles(row)
 
-    const hasEmptyTiles =
-      [...tiles].filter(tile => !tile.hasAttribute("evaluation"))
-        .length > 0
+    const hasEmptyTiles = getElement.emptyTiles(tiles)
     if (hasEmptyTiles) {
       break
     }
 
-    parseRow()
+    parseRow(false)
   }
 }
 
