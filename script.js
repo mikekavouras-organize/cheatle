@@ -22,7 +22,7 @@ const CONFIG_COLS =
   rows[0].shadowRoot.querySelectorAll("game-tile").length
 
 /// Data
-let gameData = {
+const gameData = {
   currentRow: 0,
   guesses: Array(),
   emojis: Array(),
@@ -44,7 +44,7 @@ const typeLetter = (l, i) => {
 /**
  * Parse Row
  */
-const parseRow = () => {
+const parseRow = (callAPI = true) => {
   let currentGuess = ""
   let currentEmoji = ""
   const row = rows[gameData.currentRow]
@@ -139,44 +139,45 @@ const parseRow = () => {
   console.log("gameData")
   console.log(gameData)
 
-  fetch(
-    "https://corsanywhere.herokuapp.com/https://wrdl.glitch.me/guess",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(gameData)
-    }
-  )
-    .then(response => response.json())
-    .then(data => {
-      console.log("Cheatle guess: ", data[0].word)
-      const c = gameData.correct.filter(d => d !== null)
-      if (gameData.correct.filter(d => d !== null).length === 5) {
-        console.log("DONE!")
-        return
+  if (callAPI) {
+    fetch(
+      "https://corsanywhere.herokuapp.com/https://wrdl.glitch.me/guess",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(gameData)
       }
+    )
+      .then(response => response.json())
+      .then(data => {
+        console.log("Cheatle guess: ", data[0].word)
+        const c = gameData.correct.filter(d => d !== null)
+        if (gameData.correct.filter(d => d !== null).length === 5) {
+          console.log("DONE!")
+          return
+        }
 
-      const word = data[0].word
-      word.split("").forEach((l, i) => {
-        typeLetter(l, i)
-      })
-      setTimeout(() => {
-        window.dispatchEvent(
-          new KeyboardEvent("keydown", {
-            key: "Enter"
-          })
-        )
+        const word = data[0].word
+        word.split("").forEach((l, i) => {
+          typeLetter(l, i)
+        })
         setTimeout(() => {
-          waitForAnimations().then(() => parseRow())
-        }, 500)
-      }, 1000)
-    })
-    .catch(error => {
-      console.error("Error:", error)
-    })
-
+          window.dispatchEvent(
+            new KeyboardEvent("keydown", {
+              key: "Enter"
+            })
+          )
+          setTimeout(() => {
+            waitForAnimations().then(() => parseRow())
+          }, 500)
+        }, 1000)
+      })
+      .catch(error => {
+        console.error("Error:", error)
+      })
+  }
   gameData.currentRow++
 }
 
@@ -218,7 +219,7 @@ const getCurrentRound = () => {
       break
     }
 
-    parseRow()
+    parseRow(false)
   }
 }
 
