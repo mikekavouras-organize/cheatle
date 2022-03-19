@@ -5,28 +5,91 @@
  * localStorage.removeItem("nyt-wordle-state");location.reload()
  */
 
-/// Elements
-const game = document
-  .querySelector("game-app")
-  .shadowRoot.querySelector("game-theme-manager")
-  .querySelector("#game")
-const keyboard = game
-  .querySelector("game-keyboard")
-  .shadowRoot.querySelector("#keyboard")
-const submit = keyboard.querySelector('button[data-key="↵"]')
-const rows = game.querySelectorAll("game-row")
+const WORDLES = [
+  "https://www.nytimes.com/games/wordle/index.html",
+  "https://www.wordleunlimited.com/"
+]
 
-/// Config constants
-const CONFIG_ROWS = rows.length
-const CONFIG_COLS =
-  rows[0].shadowRoot.querySelectorAll("game-tile").length
+const getElement = {
+  game: () => {
+    switch (window.location.href) {
+      case WORDLES[1]:
+        return document.querySelector(".Game")
+      default:
+        return document
+          .querySelector("game-app")
+          .shadowRoot.querySelector("game-theme-manager")
+          .querySelector("#game")
+    }
+  },
+  keyboard: game => {
+    switch (window.location.href) {
+      case WORDLES[1]:
+        return game.querySelector(".Game-keyboard")
+      default:
+        return game
+          .querySelector("game-keyboard")
+          .shadowRoot.querySelector("#keyboard")
+    }
+  },
+  submit: keyboard => {
+    switch (window.location.href) {
+      case WORDLES[1]:
+        return keyboard.querySelector(
+          ".Game-keyboard-button.Game-keyboard-button-wide"
+        )
+      default:
+        return keyboard.querySelector('button[data-key="↵"]')
+    }
+  },
+  rows: game => {
+    switch (window.location.href) {
+      case WORDLES[1]:
+        return game.querySelectorAll(".RowL")
+      default:
+        return game.querySelectorAll("game-row")
+    }
+  },
+  columns: rows => {
+    switch (window.location.href) {
+      case WORDLES[1]:
+        return rows[0].querySelectorAll(".RowL-letter")
+      default:
+        return rows[0].shadowRoot.querySelectorAll("game-tile")
+    }
+  },
+  tiles: row => {
+    switch (window.location.href) {
+      case WORDLES[1]:
+        return row.querySelectorAll(".RowL-letter")
+      default:
+        return row.shadowRoot.querySelectorAll("game-tile")
+    }
+  }
+}
+
+const game = getElement.game()
+if (!game) {
+  console.error("Invalid URL")
+  exit()
+}
+
+const keyboard = getElement.keyboard(game)
+const submit = getElement.submit(keyboard)
+const rows = getElement.rows(game)
+const cols = getElement.columns(rows)
 
 /// Data
-let gameData = {
+const config = {
+  rowCount: rows.length,
+  columnCount: cols.length
+}
+
+const gameData = {
   currentRow: 0,
   guesses: Array(),
   emojis: Array(),
-  correct: Array(CONFIG_COLS),
+  correct: Array(config.columnCount),
   absent: Array(),
   present: Object()
 }
@@ -47,9 +110,13 @@ const typeLetter = (l, i) => {
 const parseRow = () => {
   let currentGuess = ""
   let currentEmoji = ""
-  const row = rows[gameData.currentRow]
-  const tiles = row.shadowRoot.querySelectorAll("game-tile")
+  const tiles = getElement.tiles(rows[gameData.currentRow])
 
+  let rowData = {
+    correct: Array(config.columnCount),
+    absent: Array(),
+    present: Object()
+  }
   for (const [tileIdx, tile] of tiles.entries()) {
     const letter = tile.getAttribute("letter")
     const evaluation = tile.getAttribute("evaluation")
@@ -58,35 +125,35 @@ const parseRow = () => {
       case "correct":
         currentEmoji += "🟩"
 
-        gameData.correct[tileIdx] = letter
-        if (letter in gameData.present) {
-          delete gameData.present[letter]
-          delete gameData.absent[letter]
-        }
+        rowData.correct[tileIdx] = letter
+        // if (letter in gameData.present) {
+        //   delete gameData.present[letter]
+        //   delete gameData.absent[letter]
+        // }
         break
       case "present":
         currentEmoji += "🟨"
 
-        if (gameData.present[letter] === undefined) {
-          gameData.present[letter] = {
+        if (rowData.present[letter] === undefined) {
+          rowData.present[letter] = {
             letter,
             notIn: [tileIdx]
           }
         } else {
-          if (!gameData.present[letter].notIn.includes(tileIdx)) {
-            gameData.present[letter].notIn.push(tileIdx)
+          if (!rowData.present[letter].notIn.includes(tileIdx)) {
+            rowData.present[letter].notIn.push(tileIdx)
           }
         }
         break
       case "absent":
         currentEmoji += "⬜️"
         if (
-          gameData.absent.includes(letter) ||
-          letter in gameData.present
+          rowData.absent.includes(letter) ||
+          letter in rowData.present
         ) {
           break
         }
-        gameData.absent.push(letter)
+        rowData.absent.push(letter)
         break
     }
 
@@ -95,21 +162,21 @@ const parseRow = () => {
 
   /// Add notIn positions to present letters
   /// based on correct positions
-  for (const [
-    correctIdx,
-    correctLetter
-  ] of gameData.correct.entries()) {
+  for (const [correctIdx, correctLetter] of rowData.correct.entries()) {
     if (correctLetter === undefined) {
       continue
     }
 
-    for (const presentLetter of Object.keys(gameData.present)) {
-      if (!gameData.present[presentLetter].notIn.includes(correctIdx)) {
-        gameData.present[presentLetter].notIn.push(correctIdx)
+    for (const presentLetter of Object.keys(rowData.present)) {
+      if (!rowData.present[presentLetter].notIn.includes(correctIdx)) {
+        rowData.present[presentLetter].notIn.push(correctIdx)
       }
     }
   }
 
+  console.log("******************")
+  console.log("rowData")
+  console.log(rowData)
   gameData.guesses.push(currentGuess)
   gameData.emojis.push(currentEmoji)
   gameData.currentRow++
@@ -165,14 +232,12 @@ const parseRow = () => {
  * @returns resolve
  */
 const waitForAnimations = () => {
-  const row = rows[gameData.currentRow]
-  const tiles = row.shadowRoot.querySelectorAll("game-tile")
-
+  const tiles = getElement.tiles(rows[gameData.currentRow])
   return new Promise((resolve, reject) => {
     const interval = setInterval(() => {
       const allTilesRevealed =
         [...tiles].filter(tile => tile.hasAttribute("reveal"))
-          .length === CONFIG_COLS
+          .length === config.columnCount
 
       if (allTilesRevealed) {
         clearInterval(interval)
@@ -187,7 +252,7 @@ const waitForAnimations = () => {
  */
 const getCurrentRound = () => {
   for (const row of rows) {
-    const tiles = row.shadowRoot.querySelectorAll("game-tile")
+    const tiles = getElement.tiles(row)
 
     const hasEmptyTiles =
       [...tiles].filter(tile => !tile.hasAttribute("evaluation"))
