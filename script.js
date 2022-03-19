@@ -64,6 +64,9 @@ const parseRow = () => {
         currentEmoji += "🟩"
 
         gameData.correct[tileIdx] = letter
+        if (letter in gameData.present) {
+          delete gameData.present[letter]
+        }
         break
 
       case "present":
