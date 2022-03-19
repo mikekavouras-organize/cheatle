@@ -64,6 +64,9 @@ const parseRow = () => {
         currentEmoji += "🟩"
 
         gameData.correct[tileIdx] = letter
+        if (letter in gameData.present) {
+          delete gameData.present[letter]
+        }
         break
 
       case "present":
@@ -111,7 +114,14 @@ const parseRow = () => {
 
   for (const presentLetter in rowData.present) {
     if (![...gameData.correct].includes(presentLetter)) {
-      gameData.present[presentLetter] = rowData.present[presentLetter]
+      if (presentLetter in gameData.present) {
+        gameData.present[presentLetter].notIn = [
+          ...gameData.present[presentLetter].notIn,
+          ...rowData.present[presentLetter].notIn
+        ]
+      } else {
+        gameData.present[presentLetter] = rowData.present[presentLetter]
+      }
     }
   }
   for (const absentLetter of rowData.absent) {
