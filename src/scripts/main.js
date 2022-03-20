@@ -6,57 +6,40 @@
  */
 
 import Axios from "axios"
-import GameConfig from "./utils/game-config"
 
+import GameConfig from "./utils/game-config"
+import typeLetter from "./utils/type-letter"
+import states from "./constants/states"
+
+/// Configuration
 const config = new GameConfig({
   location: window.location.href,
-  wordles: [
-    "https://www.nytimes.com/games/wordle/index.html",
-    "https://www.wordleunlimited.com/"
-  ],
-  api: "https://corsanywhere.herokuapp.com/https://wrdl.glitch.me/guess",
-  states: {
-    correct: "correct",
-    present: "present",
-    absent: "absent"
-  }
+  wordles: {
+    official: "https://www.nytimes.com/games/wordle/index.html",
+    unlimited: "https://www.wordleunlimited.com/"
+  },
+  api: "https://corsanywhere.herokuapp.com/https://wrdl.glitch.me/guess"
 })
-const elements = config.setupElements()
 
-const game = getElement.game()
-if (!game) {
-  console.error("Invalid URL")
-  exit()
-}
+/// Initialize config
+config.initSettings()
+const elements = config.initElements()
 
-const keyboard = getElement.keyboard(game)
-const submit = getElement.submit(keyboard)
-const rows = getElement.rows(game)
-const cols = getElement.columns(rows)
+/// Elements
+const game = elements.game()
+const keyboard = elements.keyboard(game)
+const submit = elements.submit(keyboard)
+const rows = elements.rows(game)
+const cols = elements.columns(rows)
 
 /// Data
-const config2 = {
-  rowCount: rows.length,
-  columnCount: cols.length
-}
 const gameData = {
   currentRow: 0,
   guesses: Array(),
   emojis: Array(),
-  correct: Array(config2.columnCount),
+  correct: Array(cols.length),
   absent: Array(),
   present: Object()
-}
-
-const typeLetter = (l, i) => {
-  setTimeout(() => {
-    getElement.keyboardTarget(game).dispatchEvent(
-      new window.KeyboardEvent("keydown", {
-        key: l,
-        bubbles: true
-      })
-    )
-  }, i * 80)
 }
 
 /**
@@ -65,30 +48,33 @@ const typeLetter = (l, i) => {
 const parseRow = (callAPI = true) => {
   let currentGuess = ""
   let currentEmoji = ""
-  const tiles = getElement.tiles(rows[gameData.currentRow])
+  const tiles = elements.tiles(rows[gameData.currentRow])
 
   let rowData = {
-    correct: Array(config2.columnCount),
+    correct: Array(cols.length),
     absent: Array(),
     present: Object()
   }
   for (const [tileIdx, tile] of tiles.entries()) {
-    const letter = getElement.letter(tile)
-    const evaluation = getElement.evaluation(tile)
+    const letter = elements.letter(tile)
+    const evaluation = elements.evaluation(tile)
 
     switch (evaluation) {
-      case config.states.correct:
-        currentEmoji += "🟩"
-
+      /// Correct
+      /// - Add to `correct` array
+      /// - Remove letter from `present` object
+      case states.correct.name:
         gameData.correct[tileIdx] = letter
         if (letter in gameData.present) {
           delete gameData.present[letter]
         }
         break
 
-      case config.states.present:
-        currentEmoji += "🟨"
-
+      /// Present
+      /// - If the letter is not `present` yet,
+      ///   add it to the `present` array,
+      ///   otherwise update the `notIn` array.
+      case states.present.name:
         if (rowData.present[letter] === undefined) {
           rowData.present[letter] = {
             letter,
@@ -101,18 +87,23 @@ const parseRow = (callAPI = true) => {
         }
         break
 
-      case config.states.absent:
-        currentEmoji += "⬜️"
-
+      /// Absent
+      /// - If the letter is already in the `absent` array,
+      ///   or if the letter is `present`, then
+      ///   we don't need to add it
+      case states.absent.name:
         if (
-          !rowData.absent.includes(letter) &&
-          !(letter in rowData.present)
+          rowData.absent.includes(letter) ||
+          letter in rowData.present
         ) {
-          rowData.absent.push(letter)
+          break
         }
+
+        rowData.absent.push(letter)
         break
     }
 
+    currentEmoji += config.addEmoji(evaluation)
     currentGuess += letter
   }
 
@@ -130,29 +121,44 @@ const parseRow = (callAPI = true) => {
     }
   }
 
+  /// For each present letter, update the `notIn` array
+  /// or the `present` array
   for (const presentLetter in rowData.present) {
-    if (![...gameData.correct].includes(presentLetter)) {
-      if (presentLetter in gameData.present) {
-        gameData.present[presentLetter].notIn = [
-          ...gameData.present[presentLetter].notIn,
-          ...rowData.present[presentLetter].notIn
-        ]
-      } else {
-        gameData.present[presentLetter] = rowData.present[presentLetter]
-      }
+    /// If the letter is already in the `correct` array, skip
+    if ([...gameData.correct].includes(presentLetter)) {
+      continue
+    }
+
+    if (presentLetter in gameData.present) {
+      gameData.present[presentLetter].notIn = [
+        ...gameData.present[presentLetter].notIn,
+        ...rowData.present[presentLetter].notIn
+      ]
+    } else {
+      gameData.present[presentLetter] = rowData.present[presentLetter]
     }
   }
+
+  /// Add absent letters to the `absent` array
+  /// as long as they are not in the `correct` array
+  /// or already in the `absent` array
   for (const absentLetter of rowData.absent) {
     if (
-      ![...gameData.correct].includes(absentLetter) &&
-      ![...gameData.absent].includes(absentLetter)
+      [...gameData.correct].includes(absentLetter) ||
+      [...gameData.absent].includes(absentLetter)
     ) {
-      gameData.absent.push(absentLetter)
+      continue
     }
+
+    gameData.absent.push(absentLetter)
   }
+
+  /// Add the guess to the `guesses` array
+  /// and the emoji to the `emojis` array
   gameData.guesses.push(currentGuess)
   gameData.emojis.push(currentEmoji)
 
+  /// Make API call with gameData to get next suggestion
   if (callAPI) {
     Axios.post(config.api, gameData)
       .then(response => {
@@ -164,16 +170,11 @@ const parseRow = (callAPI = true) => {
           return
         }
 
-        word.split("").forEach((l, i) => {
-          typeLetter(l, i)
+        word.split("").forEach((key, idx) => {
+          typeLetter(elements.keyboardTarget(game), key, idx)
         })
         setTimeout(() => {
-          getElement.keyboardTarget(game).dispatchEvent(
-            new KeyboardEvent("keydown", {
-              key: "Enter",
-              bubbles: true
-            })
-          )
+          typeLetter(elements.keyboardTarget(game), "Enter")
           setTimeout(() => {
             waitForAnimations().then(() => parseRow())
           }, 500)
@@ -183,20 +184,20 @@ const parseRow = (callAPI = true) => {
         console.error("Error:", error)
       })
   }
+
   gameData.currentRow++
 }
 
 /**
  * Wait For Animations
  *
- * @param {NodeList} tiles
  * @returns resolve
  */
 const waitForAnimations = () => {
-  const tiles = getElement.tiles(rows[gameData.currentRow])
+  const tiles = elements.tiles(rows[gameData.currentRow])
   return new Promise((resolve, reject) => {
     const interval = setInterval(() => {
-      const allTilesRevealed = getElement.revelation(tiles)
+      const allTilesRevealed = elements.revelation(tiles)
       if (allTilesRevealed) {
         clearInterval(interval)
         resolve()
@@ -207,12 +208,17 @@ const waitForAnimations = () => {
 
 /**
  * Get Current Round
+ *
+ * At page load, check if there are already
+ * guesses on the board. Call the `parseRow`
+ * function with the false argument to avoid
+ * making an API call.
  */
 const getCurrentRound = () => {
   for (const row of rows) {
-    const tiles = getElement.tiles(row)
+    const tiles = elements.tiles(row)
 
-    const hasEmptyTiles = getElement.emptyTiles(tiles)
+    const hasEmptyTiles = elements.emptyTiles(tiles)
     if (hasEmptyTiles) {
       break
     }
@@ -221,6 +227,7 @@ const getCurrentRound = () => {
   }
 }
 
+/// Entry Point
 getCurrentRound()
 submit.addEventListener("click", () => {
   waitForAnimations().then(() => parseRow())
