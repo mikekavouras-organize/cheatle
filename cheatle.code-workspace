@@ -22,7 +22,8 @@
       "theme-ready.tmp": true
     },
     "search.exclude": {
-      "**/node_modules": false
+      "**/node_modules": true,
+      "*.bundle.*": true,
     },
     "[postcss]": {
       "editor.defaultFormatter": "esbenp.prettier-vscode",
