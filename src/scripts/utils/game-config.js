@@ -38,6 +38,8 @@ export default class GameConfig {
         switch (this.location) {
           case this.wordles.unlimited:
             return document.querySelector(".Game")
+
+          case this.wordles.official:
           default:
             return document
               .querySelector("game-app")
@@ -49,6 +51,8 @@ export default class GameConfig {
         switch (this.location) {
           case this.wordles.unlimited:
             return game.querySelector(".Game-keyboard")
+
+          case this.wordles.official:
           default:
             return game
               .querySelector("game-keyboard")
@@ -61,6 +65,8 @@ export default class GameConfig {
             return keyboard.querySelector(
               ".Game-keyboard-button.Game-keyboard-button-wide"
             )
+
+          case this.wordles.official:
           default:
             return keyboard.querySelector('button[data-key="↵"]')
         }
@@ -69,6 +75,8 @@ export default class GameConfig {
         switch (this.location) {
           case this.wordles.unlimited:
             return game.querySelectorAll(".RowL")
+
+          case this.wordles.official:
           default:
             return game.querySelectorAll("game-row")
         }
@@ -77,6 +85,8 @@ export default class GameConfig {
         switch (this.location) {
           case this.wordles.unlimited:
             return rows[0].querySelectorAll(".RowL-letter")
+
+          case this.wordles.official:
           default:
             return rows[0].shadowRoot.querySelectorAll("game-tile")
         }
@@ -85,6 +95,8 @@ export default class GameConfig {
         switch (this.location) {
           case this.wordles.unlimited:
             return row.querySelectorAll(".RowL-letter")
+
+          case this.wordles.official:
           default:
             return row.shadowRoot.querySelectorAll("game-tile")
         }
@@ -93,6 +105,8 @@ export default class GameConfig {
         switch (this.location) {
           case this.wordles.unlimited:
             return tile.innerHTML
+
+          case this.wordles.official:
           default:
             return tile.getAttribute("letter")
         }
@@ -109,6 +123,8 @@ export default class GameConfig {
               evaluation = states.absent.name
             }
             return evaluation
+
+          case this.wordles.official:
           default:
             return tile.getAttribute("evaluation")
         }
@@ -127,6 +143,8 @@ export default class GameConfig {
                   tile.classList.contains("letter-absent")
               )
             )
+
+          case this.wordles.official:
           default:
             return (
               [...tiles].filter(tile => tile.hasAttribute("reveal"))
@@ -148,6 +166,8 @@ export default class GameConfig {
                   tile.classList.contains("letter-absent")
               )
             )
+
+          case this.wordles.official:
           default:
             return (
               [...tiles].filter(
@@ -160,6 +180,8 @@ export default class GameConfig {
         switch (this.location) {
           case this.wordles.unlimited:
             return game
+
+          case this.wordles.official:
           default:
             return window
         }

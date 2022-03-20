@@ -16,7 +16,8 @@ const config = new GameConfig({
   location: window.location.href,
   wordles: {
     official: "https://www.nytimes.com/games/wordle/index.html",
-    unlimited: "https://www.wordleunlimited.com/"
+    unlimited: "https://www.wordleunlimited.com/",
+    octokatherine: "https://octokatherine.github.io/word-master/"
   },
   api: "https://corsanywhere.herokuapp.com/https://wrdl.glitch.me/guess"
 })
