@@ -34,6 +34,7 @@ const cols = elements.columns(rows)
 
 /// Data
 const gameData = {
+  location: config.location,
   currentRow: 0,
   guesses: Array(),
   emojis: Array(),
