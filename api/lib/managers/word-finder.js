@@ -52,7 +52,7 @@ const WordFinder = () => {
             .join(",")}`
         }
 
-        let apiResponse = await get(url)
+        let apiResponse = await axios.get(url)
         return apiResponse.data
       })(gameState)
 

@@ -18,7 +18,7 @@ const config = new GameConfig({
     official: "https://www.nytimes.com/games/wordle/index.html",
     unlimited: "https://www.wordleunlimited.com/"
   },
-  api: "https://corsanywhere.herokuapp.com/https://wrdl.glitch.me/v1/guess"
+  api: "https://corsanywhere.herokuapp.com/https://wrdl.glitch.me/guess"
 })
 
 /// Initialize config

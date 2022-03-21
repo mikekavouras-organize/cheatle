@@ -9,7 +9,7 @@
 const WordFinder = require("../../lib/managers/word-finder")
 
 exports.requestScreenplay = async (req, res) => {
-  const state = request.body
+  const state = req.body
   let result = await WordFinder().run(state)
 
   res.json(result)
