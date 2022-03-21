@@ -10,7 +10,7 @@ app.use(express.json())
 const apiVersions = glob.sync("routes/*/")
 for (let i = 0; i < apiVersions.length; i++) {
   const v = apiVersions[i]
-    .substr(apiVersions[i].lastIndexOf("/") - 2)
+    .substring(apiVersions[i].lastIndexOf("/") - 2)
     .slice(0, -1)
   const apiRoutes = glob.sync(`routes/${v}/*`)
   for (let i = 0; i < apiRoutes.length; i++) {
