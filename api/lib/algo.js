@@ -1,19 +1,30 @@
-const allWords = require('./words')
-const bradWords = require('./brad-words')
-const maWords = require('./ma-words')
+/**
+ * Algorithm
+ *
+ * @since 1.0.0
+ */
 
-module.exports = (wordList = allWords) => {
-  return ({correct, present, absent}) => {
-      const correctByIdx = correct.reduce((prev, curr, idx) => {
+import allWords from "./words/words"
+import bradWords from "./words/brad-words"
+import maWords from "./words/ma-words"
+
+const WORD_LIST = allWords
+
+export default (wordList = WORD_LIST) => {
+  return ({ correct, present, absent }) => {
+    const correctByIdx = correct.reduce((prev, curr, idx) => {
       if (curr === null) return prev
       prev[curr] = idx
       return prev
     }, {})
-    const presentByIdx = Object.entries(present).reduce((prev, entry) => {
-      let [key, value] = entry
-      prev[key] = value.notIn
-      return prev
-    }, {})
+    const presentByIdx = Object.entries(present).reduce(
+      (prev, entry) => {
+        let [key, value] = entry
+        prev[key] = value.notIn
+        return prev
+      },
+      {}
+    )
     const absentCache = absent.reduce((prev, curr) => {
       prev[curr] = true
       return prev
@@ -37,7 +48,7 @@ module.exports = (wordList = allWords) => {
         })
       })
 
-      const matchesAbsent = !word.split('').some(letter => {
+      const matchesAbsent = !word.split("").some(letter => {
         return absentCache[letter] == true
       })
 

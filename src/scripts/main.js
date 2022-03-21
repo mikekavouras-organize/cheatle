@@ -163,11 +163,21 @@ const parseRow = (callAPI = true) => {
   if (callAPI) {
     Axios.post(config.api, gameData)
       .then(response => {
-        const word = response.data[0].word
+        const word = response.data[0]?.word || null
+        if (!word) {
+          return
+        }
+
         console.log("Cheatle guess: ", word)
         const c = gameData.correct.filter(d => d !== null)
-        if (gameData.correct.filter(d => d !== null).length === 5) {
+        if (
+          gameData.correct.filter(d => d !== null).length ===
+          cols.length
+        ) {
           console.log("VICTORY!")
+
+          localStorage.removeItem("nyt-wordle-state")
+          location.reload()
           return
         }
 
@@ -187,6 +197,22 @@ const parseRow = (callAPI = true) => {
   }
 
   gameData.currentRow++
+}
+
+const randomFirstWord = () => {
+  const word =
+    config.startingWords()[
+      Math.floor(Math.random() * config.startingWords().length)
+    ]
+  word.split("").forEach((key, idx) => {
+    typeLetter(elements.keyboardTarget(game), key, idx)
+  })
+  setTimeout(() => {
+    typeLetter(elements.keyboardTarget(game), "Enter")
+    setTimeout(() => {
+      waitForAnimations().then(() => parseRow())
+    }, 500)
+  }, 1000)
 }
 
 /**
@@ -240,3 +266,5 @@ window.addEventListener("keyup", e => {
   }
   waitForAnimations().then(() => parseRow())
 })
+
+randomFirstWord()

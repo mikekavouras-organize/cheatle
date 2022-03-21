@@ -5,11 +5,15 @@
   "private": true,
   "repository": "git@github.com:mikekavouras-organize/cheatle.git",
   "license": "MIT",
+  "engines": {
+    "node": "14.x"
+  },
   "scripts": {
     "build": "webpack"
   },
   "dependencies": {
-    "axios": "^0.26.1"
+    "axios": "^0.26.1",
+    "dotenv": "^16.0.0"
   },
   "devDependencies": {
     "@babel/core": "^7.17.8",

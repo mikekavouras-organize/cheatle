@@ -201,4 +201,17 @@ export default class GameConfig {
   addEmoji(state) {
     return states[state].emoji.default
   }
+
+  startingWords() {
+    return [
+      "adieu",
+      "steak",
+      "tread",
+      "table",
+      "audio",
+      "clamp",
+      "drink",
+      "irate"
+    ]
+  }
 }
