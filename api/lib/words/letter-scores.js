@@ -1,4 +1,4 @@
-export default {
+module.exports = {
   e: 11.1607,
   a: 8.4966,
   r: 7.5809,

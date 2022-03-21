@@ -1,26 +1,26 @@
-/**
- * Server
- *
- * @since 1.0.0
- */
+const express = require("express")
+const app = express()
+const glob = require("glob")
 
-require("dotenv").config()
+// Express Settings
+app.use(express.urlencoded({ extended: false }))
+app.use(express.json())
 
-import { MongoClient } from "mongodb"
+// API routes
+const apiVersions = glob.sync("routes/*/")
+for (let i = 0; i < apiVersions.length; i++) {
+  const v = apiVersions[i]
+    .substr(apiVersions[i].lastIndexOf("/") - 2)
+    .slice(0, -1)
+  const apiRoutes = glob.sync(`routes/${v}/*`)
+  for (let i = 0; i < apiRoutes.length; i++) {
+    const path = `${apiRoutes[i].split(".")[0]}`
+    const r = path.match(/([^\/]*)\/*$/)[1]
+    app.use(`/${v}/${r}`, require(`./routes/${v}/${r}`))
+  }
+}
 
-MongoClient.connect(process.env.CONNECTION_STRING, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-  .then(client => {
-    module.exports = client
-    const server = require("server")
-    server.listen(process.env.PORT)
-  })
-  .catch(err => console.error(err))
+// Server
+const server = require("http").createServer(app)
 
-// fastify.post("/guess", async function(request, reply) {
-//   const state = request.body
-//   let result = await App().run(state)
-//   reply.send(result)
-// });
+module.exports = server

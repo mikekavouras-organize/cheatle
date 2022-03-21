@@ -2,20 +2,24 @@
   "name": "glitch-hello-node",
   "version": "0.0.1",
   "description": "A simple Node app built on fastify, instantly up and running. Built to be remixed on Glitch.com.",
-  "main": "server.js",
+  "main": "server.mjs",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.mjs"
   },
   "dependencies": {
+    "@types/glob": "^7.2.0",
+    "axios": "^0.26.1",
+    "binarysearch": "^1.0.1",
+    "body-parser": "^1.19.2",
+    "express": "^4.17.3",
     "fastify": "^3.27.4",
     "fastify-formbody": "^5.2.0",
     "fastify-static": "^4.5.0",
+    "glob": "^7.2.0",
     "handlebars": "^4.7.7",
     "mongodb": "^4.4.1",
-    "point-of-view": "^5.1.0",
-    "axios": "^0.26.1",
-    "binarysearch": "^1.0.1",
-    "body-parser": "^1.19.2"
+    "nodemon": "^2.0.15",
+    "point-of-view": "^5.1.0"
   },
   "engines": {
     "node": "14.x"
@@ -28,5 +32,8 @@
     "node",
     "glitch",
     "express"
-  ]
+  ],
+  "devDependencies": {
+    "@types/express": "^4.17.13"
+  }
 }

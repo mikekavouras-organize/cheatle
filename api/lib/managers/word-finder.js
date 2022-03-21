@@ -4,13 +4,11 @@
  * @since 1.0.0
  */
 
-import { get } from "axios"
-import applyGameStateToWordList from "../algo"
-import rank from "./word-ranker"
+const axios = require("axios")
+const applyGameStateToWordList = require("../algo")
+const rank = require("./word-ranker")
 
-import db from "./db"
-
-const App = () => {
+const WordFinder = () => {
   return {
     // Steps:
     //    1. Filter word list against current game state
@@ -95,4 +93,4 @@ const App = () => {
   }
 }
 
-export default App
+module.exports = WordFinder

@@ -4,13 +4,13 @@
  * @since 1.0.0
  */
 
-import allWords from "./words/words"
-import bradWords from "./words/brad-words"
-import maWords from "./words/ma-words"
+const allWords = require("./words/words")
+const bradWords = require("./words/brad-words")
+const maWords = require("./words/ma-words")
 
 const WORD_LIST = allWords
 
-export default (wordList = WORD_LIST) => {
+module.exports = (wordList = WORD_LIST) => {
   return ({ correct, present, absent }) => {
     const correctByIdx = correct.reduce((prev, curr, idx) => {
       if (curr === null) return prev

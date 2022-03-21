@@ -4,12 +4,12 @@
  * @since 1.0.0
  */
 
-import scores from "../words/letter-scores"
+const scores = require("../words/letter-scores")
 
 // words: {string: int} where the key is a word and the value is a score
 //
 // Returns [word]
-export default words => {
+module.exports = words => {
   let weighWord = word => {
     let score = word.split("").reduce((prev, curr) => {
       let t = (prev += scores[curr] / 100.0)
