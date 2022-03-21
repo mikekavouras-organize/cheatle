@@ -11,6 +11,15 @@ import GameConfig from "./utils/game-config"
 import typeLetter from "./utils/type-letter"
 import states from "./constants/states"
 
+const API_URL =
+  "https://corsanywhere.herokuapp.com/http://localhost:8080/v1/guess/get-word"
+// const API_URL =
+//   "https://corsanywhere.herokuapp.com/https://wrdl.glitch.me/guess"
+
+console.log("******************")
+console.log("API_URL")
+console.log(API_URL)
+
 /// Configuration
 const config = new GameConfig({
   location: window.location.href,
@@ -18,7 +27,7 @@ const config = new GameConfig({
     official: "https://www.nytimes.com/games/wordle/index.html",
     unlimited: "https://www.wordleunlimited.com/"
   },
-  api: "https://corsanywhere.herokuapp.com/https://wrdl.glitch.me/guess"
+  api: API_URL
 })
 
 /// Initialize config

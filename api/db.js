@@ -5,9 +5,13 @@
  */
 
 const MongoClient = require("mongodb").MongoClient
-require("dotenv").config({
-  path: "../.env"
-})
+require("dotenv").config(
+  process.env.NODE_ENV === "development"
+    ? {
+        path: "../.env"
+      }
+    : {}
+)
 
 MongoClient.connect(process.env.MONGODB_CONNECTION, {
   useNewUrlParser: true,
