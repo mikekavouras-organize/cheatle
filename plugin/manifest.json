@@ -5,7 +5,7 @@
   "manifest_version": 3,
   "content_scripts": [
     {
-      "matches": ["https://*.nytimes.com/games/wordle/*"],
+      "matches": ["https://*.nytimes.com/games/wordle/*", "https://*.wordleunlimited.com/*"],
       "js": ["script.js"]
     }
   ]
